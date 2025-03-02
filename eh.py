@@ -1,11 +1,17 @@
 import os
 import telebot
 from datetime import datetime
+from flask import Flask
 
 BOT_TOKEN =os.getenv("TGTOK")
-
-# Создаем экземпляр бота
 bot = telebot.TeleBot(BOT_TOKEN)
+
+app = Flask(__name__)
+
+# Определяем "пустой" маршрут (route)
+@app.route("/")
+def hello_world():
+    return "Bot is running!"  # Просто возвращаем сообщение
 
 # Обработчик всех текстовых сообщений
 @bot.message_handler(content_types=['text'])
@@ -46,4 +52,15 @@ def handle_other_content(message):
     bot.reply_to(message, f"Вы отправили {content_type}. Я могу повторять только текстовые сообщения!")
 
 
-bot.infinity_polling()
+# Запускаем и бота, и Flask-приложение
+if __name__ == "__main__":
+    # Запускаем Flask в отдельном потоке
+    import threading
+    def run_flask():
+        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.start()
+
+    # Запускаем бота (polling) в основном потоке
+    bot.infinity_polling()
